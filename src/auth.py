@@ -1,3 +1,4 @@
+import os
 import secrets
 from functools import wraps
 from datetime import datetime, timedelta
@@ -22,10 +23,11 @@ class AuthManager:
         return None
     
     def create_key(self, name: str, permissions: List[str], 
-                   memory_quota: int = memory.DEFAULT_QUOTA_BYTES) -> str:
+                   memory_quota: int = memory.DEFAULT_QUOTA_BYTES,
+                   fixed_key: Optional[str] = None) -> str:
         keys = Storage.load_keys()
         api_key = ApiKey(
-            key=self.generate_key(),
+            key=fixed_key or self.generate_key(),
             name=name,
             permissions=permissions,
             memory_quota=memory_quota,
@@ -159,8 +161,12 @@ auth_manager = AuthManager()
 memory_manager = MemoryManager()
 
 if not Storage.load_keys():
+    # إن ضُبط متغيّر البيئة ADMIN_API_KEY، يُستعمل كمفتاح ثابت أنت تختاره
+    # (لا حاجة لقراءته من السيرفر عبر Shell، وليس عشوائيًا فيتغيّر كل إعادة تشغيل).
+    # إن لم يُضبط، يعود للسلوك الأصلي (توليد عشوائي).
     auth_manager.create_key(
         "admin",
         ["create_key", "delete_key", "get_key", "get_keys", 
-         "get_video", "get_audio", "get_live_video", "get_live_audio", "get_info"]
+         "get_video", "get_audio", "get_live_video", "get_live_audio", "get_info"],
+        fixed_key=os.environ.get('ADMIN_API_KEY')
     )
