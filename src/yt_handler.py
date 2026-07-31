@@ -16,6 +16,18 @@ from src.models import TaskStatus, TaskType
 from config import storage, memory
 from config import task as task_config
 
+# ملف كوكيز يوتيوب (صيغة Netscape/cookies.txt) — إن وُجد في جذر المشروع
+# يُستعمل تلقائيًا لكل عمليات yt-dlp، لتفادي خطأ
+# "Sign in to confirm you're not a bot" الذي يظهر عند التحميل من خوادم
+# سحابية (كـ Render) بدون جلسة موثّقة.
+COOKIES_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'cookies.txt')
+
+def get_cookie_opts() -> dict:
+    if os.path.isfile(COOKIES_FILE):
+        return {'cookiefile': COOKIES_FILE}
+    return {}
+
+
 class YTDownloader:
     def __init__(self):
         self.executor = ThreadPoolExecutor(max_workers=task_config.MAX_WORKERS)
@@ -51,6 +63,7 @@ class YTDownloader:
                 'extract_flat': False,
                 'skip_download': True,
                 'extractor_args': { 'youtube': { 'player_client': ['default', '-tv_simply'], }, },
+                **get_cookie_opts(),
             }
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -122,7 +135,8 @@ class YTDownloader:
                 'quiet': True,
                 'no_warnings': True,
                 'extract_flat': True,
-                'skip_download': True
+                'skip_download': True,
+                **get_cookie_opts(),
             }
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -206,6 +220,7 @@ class YTDownloader:
             'format': format_option,
             'outtmpl': os.path.join(download_path, output_name),
             'extractor_args': { 'youtube': { 'player_client': ['default', '-tv_simply'], }, },
+            **get_cookie_opts(),
         }
         
         if output_format:
