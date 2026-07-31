@@ -216,8 +216,9 @@ class YTDownloader:
             output_name = 'live_audio.%(ext)s' if is_live else 'audio.%(ext)s'
         
         opts = {
-            'format': format_option,
+            'format': 'best/bestvideo+bestaudio',  # SABR لا يدعم بث فيديو منفصل، لذا نُفضّل الصيغة المدمجة
             'outtmpl': os.path.join(download_path, output_name),
+            'extractor_args': { 'youtube': { 'player_client': ['mweb'], }, },  # الأكثر موثوقية حاليًا ضد فرض SABR
             **get_cookie_opts(),
         }
         
