@@ -62,7 +62,6 @@ class YTDownloader:
                 'no_warnings': True,
                 'extract_flat': False,
                 'skip_download': True,
-                'extractor_args': { 'youtube': { 'player_client': ['default', '-tv_simply'], }, },
                 **get_cookie_opts(),
             }
             
@@ -219,7 +218,6 @@ class YTDownloader:
         opts = {
             'format': format_option,
             'outtmpl': os.path.join(download_path, output_name),
-            'extractor_args': { 'youtube': { 'player_client': ['default', '-tv_simply'], }, },
             **get_cookie_opts(),
         }
         
