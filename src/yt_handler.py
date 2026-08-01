@@ -28,6 +28,23 @@ def get_cookie_opts() -> dict:
     return {}
 
 
+class CapturingLogger:
+    """يلتقط كل رسائل yt-dlp الداخلية (عادة مخفية بسبب quiet=True) حتى تظهر
+    في سجلات Render عند الفشل، بدل رسالة الخطأ النهائية العامة فقط."""
+    def __init__(self):
+        self.lines = []
+    def debug(self, msg):
+        self.lines.append(f"DEBUG: {msg}")
+    def info(self, msg):
+        self.lines.append(f"INFO: {msg}")
+    def warning(self, msg):
+        self.lines.append(f"WARNING: {msg}")
+    def error(self, msg):
+        self.lines.append(f"ERROR: {msg}")
+    def get_trace(self):
+        return "\n".join(self.lines[-40:])  # آخر 40 سطرًا كافية عادة لمعرفة السبب
+
+
 class YTDownloader:
     def __init__(self):
         self.executor = ThreadPoolExecutor(max_workers=task_config.MAX_WORKERS)
@@ -180,11 +197,19 @@ class YTDownloader:
             os.makedirs(download_path, exist_ok=True)
             
             # Configure yt-dlp
+            capturing_logger = CapturingLogger()
             ydl_opts = self._build_ydl_options(task, download_path)
+            ydl_opts['logger'] = capturing_logger
+            ydl_opts['quiet'] = True
+            ydl_opts['no_warnings'] = False
             
             # Download
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([task['url']])
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([task['url']])
+            except Exception as download_error:
+                trace = capturing_logger.get_trace()
+                raise Exception(f"{download_error}\n--- سجل yt-dlp التفصيلي ---\n{trace}") from download_error
             
             # Update task
             files = os.listdir(download_path)
